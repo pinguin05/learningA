@@ -3,9 +3,12 @@ from openai import OpenAI
 from pydantic import BaseModel
 from  cache import persistent_cache
 
+from config import TEXT_MODEL
 
-#@persistent_cache("cache\\annotation", ignore=["client"])
+
+@persistent_cache("cache\\annotation", ignore=["client"])
 def get_annotation(text:str, client:OpenAI):
+    print("generating annotation...")
     messages = [
         {"role": "user", "content": f"сформируй аналитическую запись на русском, содержащую предмет (дисциплину), тему, краткую аннотацию для этой статьи:\n\n{text}"}
     ]
@@ -29,7 +32,7 @@ def get_annotation(text:str, client:OpenAI):
                     "annotation": {
                         "description": "краткая аннотация",
                         "type": "string",
-                        "maxLength": 150
+                        #"maxLength": 200
                     }
                 },
                 "required": ["subject", "topic", "annotation"]
@@ -38,12 +41,12 @@ def get_annotation(text:str, client:OpenAI):
     }
 
     response = client.chat.completions.create(
-        model="qwen/qwen3-vl-4b",
+        model=TEXT_MODEL,
         messages=messages,
         response_format=schema,
         temperature=0.1
     )
 
     result = json.loads(response.choices[0].message.content)
-    print("llm response: ", result)
+    print("total tokens", response.usage.total_tokens)
     return result
