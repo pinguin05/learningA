@@ -7,7 +7,7 @@ from cache import persistent_cache
 from config import TEXT_MODEL
 
 
-@persistent_cache("cache\\annotation", ignore=["client"])
+@persistent_cache("cache\\order", ignore=["client"])
 def get_order(df:pd.DataFrame, client:OpenAI):
     print("generating order...")
     mess = ""
@@ -33,7 +33,7 @@ def get_order(df:pd.DataFrame, client:OpenAI):
                             "description": "id учебного материала."
                         },
                         "previous_id": {
-                            "type": ["integer", "null"],
+                            "type": "integer",
                             "description": "id предыдущего учебного материала"
                         }
                     },
@@ -57,7 +57,7 @@ def get_order(df:pd.DataFrame, client:OpenAI):
                 "strict": True
             }
         },
-        temperature=0.1
+        temperature=0.3
     )
 
     result = json.loads(response.choices[0].message.content)

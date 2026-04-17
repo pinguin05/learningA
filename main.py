@@ -9,6 +9,8 @@ from order import get_order
 from gen_check import gen_if
 from storage import save_df_to_postgres
 
+from config import POSTGRES
+
 
 client = OpenAI(
     base_url="http://localhost:1234/v1",
@@ -24,12 +26,15 @@ def main(path_to_data:str):
 
         annotation = get_annotation(text, client)
 
+        material_type = "text"
         media_annotaion = ""
         for file in os.listdir(os.path.join(path_to_data, folder)):
             path = os.path.join(path_to_data, folder, file)
             if is_image(path):
+                material_type += " + images"
                 media_annotaion += f"{file}:\n{get_image_annotation(path, client)}\n"
             if is_video_cv2(path):
+                material_type += " + video"
                 media_annotaion += f"{file}:\n{get_video_annotation(path, client)}\n"
 
         recs = get_recomendation(text, client)
@@ -45,7 +50,8 @@ def main(path_to_data:str):
             "rec_validity": recs["validity"],
             "rec_availability": recs["availability"],
             "rec_sum": recs["summary"],
-            "generated": False
+            "generated": False,
+            "type": material_type
         })
     
     df = pd.DataFrame(rows)
@@ -53,11 +59,15 @@ def main(path_to_data:str):
     gen_df = generate_if_need(df)
     df = pd.concat([df, gen_df])
 
-    orders = get_order(df, client)
-    df['previous_id'] = df['id'].map(lambda x: next(item['previous_id'] for item in orders if item['id'] == x))
+    orders = pd.DataFrame(get_order(df, client))
+    df = df.join(orders.set_index('id'), on='id')
 
     df.to_csv("temp.csv")
-    save_df_to_postgres(df, "data", "postgresql://user:password@localhost:5432/database")
+    save_df_to_postgres(df, "data", POSTGRES)
+
+    df['text_len'] = df['text'].str.len()
+    df["level_from_midle"] = df["text_len"] - df["text_len"].mean()
+    save_df_to_postgres(df, "stats_data", POSTGRES)
 
 
 def generate_if_need(df:pd.DataFrame):
@@ -83,7 +93,8 @@ def generate_if_need(df:pd.DataFrame):
                     "rec_validity": recs["validity"],
                     "rec_availability": recs["availability"],
                     "rec_sum": recs["summary"],
-                    "generated": True
+                    "generated": True,
+                    "type": "text"
                 })
                 start_id += 1
     return pd.DataFrame(rows)
