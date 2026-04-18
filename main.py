@@ -51,7 +51,8 @@ def main(path_to_data:str):
             "rec_availability": recs["availability"],
             "rec_sum": recs["summary"],
             "generated": False,
-            "type": material_type
+            "type": material_type,
+            "difficulty_level": annotation["difficulty_level"]
         })
     
     df = pd.DataFrame(rows)
@@ -94,7 +95,8 @@ def generate_if_need(df:pd.DataFrame):
                     "rec_availability": recs["availability"],
                     "rec_sum": recs["summary"],
                     "generated": True,
-                    "type": "text"
+                    "type": "text",
+                    "difficulty_level": annotation["difficulty_level"]
                 })
                 start_id += 1
     return pd.DataFrame(rows)

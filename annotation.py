@@ -10,7 +10,7 @@ from config import TEXT_MODEL
 def get_annotation(text:str, client:OpenAI):
     print("generating annotation...")
     messages = [
-        {"role": "user", "content": f"сформируй аналитическую запись на русском, содержащую предмет (дисциплину), тему, краткую аннотацию для этой статьи:\n\n{text}"}
+        {"role": "user", "content": f"сформируй аналитическую запись на русском, содержащую предмет (дисциплину), тему, краткую аннотацию и уровень сложности для этой статьи:\n\n{text}"}
     ]
 
     schema = {
@@ -33,9 +33,15 @@ def get_annotation(text:str, client:OpenAI):
                         "description": "краткая аннотация",
                         "type": "string",
                         #"maxLength": 200
+                    },
+                    "difficulty_level": {
+                        "description": "уровень сложности учебного материала",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 10
                     }
                 },
-                "required": ["subject", "topic", "annotation"]
+                "required": ["subject", "topic", "annotation", "difficulty_level"]
             }
         }
     }
@@ -48,5 +54,6 @@ def get_annotation(text:str, client:OpenAI):
     )
 
     result = json.loads(response.choices[0].message.content)
+    print(result)
     print("total tokens", response.usage.total_tokens)
     return result
