@@ -8,6 +8,7 @@ from recomendations import get_recomendation
 from order import get_order
 from gen_check import gen_if
 from storage import save_df_to_postgres
+from analizer import Analizer
 
 from config import POSTGRES
 
@@ -19,23 +20,13 @@ client = OpenAI(
     
 
 def main(path_to_data:str):
+    analizer = Analizer(client, "sage-mm-qwen3-vl-4b-sft")
     rows = []
     for idx, folder in enumerate(os.listdir(path_to_data)):
-        with open(os.path.join(path_to_data, folder, "text.md"), "r", encoding="utf-8") as f:
-            text = f.read()
+        text = analizer.getText(os.path.join(path_to_data, folder))
+        media_annotation = analizer.getMedia(os.path.join(path_to_data, folder))
 
         annotation = get_annotation(text, client)
-
-        material_type = "text"
-        media_annotaion = ""
-        for file in os.listdir(os.path.join(path_to_data, folder)):
-            path = os.path.join(path_to_data, folder, file)
-            if is_image(path):
-                material_type += " + images"
-                media_annotaion += f"{file}:\n{get_image_annotation(path, client)}\n"
-            if is_video_cv2(path):
-                material_type += " + video"
-                media_annotaion += f"{file}:\n{get_video_annotation(path, client)}\n"
 
         recs = get_recomendation(text, client)
 
@@ -45,13 +36,13 @@ def main(path_to_data:str):
             "annotation": annotation["annotation"],
             "subject": annotation["subject"],
             "topic": annotation["topic"],
-            "media_annotation": media_annotaion,
+            "media_annotation": media_annotation,
             "rec_struct": recs["struct"],
             "rec_validity": recs["validity"],
             "rec_availability": recs["availability"],
             "rec_sum": recs["summary"],
             "generated": False,
-            "type": material_type,
+            "type": annotation["type"],
             "difficulty_level": annotation["difficulty_level"]
         })
     

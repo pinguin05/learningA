@@ -1,0 +1,73 @@
+import os
+import json
+from docx import Document
+from pypdf import PdfReader
+from pathlib import Path
+
+from image import get_image_annotation
+from video import get_video_annotation
+
+
+class Analizer:
+    def __init__(self, client, model):
+        self.client = client
+        self.model = model
+
+    
+    def getText(self, path_to_dir:str):
+        text = ""
+        folder = Path(path_to_dir)
+        for file in folder.rglob("*"):
+            if not file.is_file():
+                continue
+
+            ext = file.suffix.lower()
+            
+            if ext in [".md", ".txt"]:
+                with open(file, "r", encoding="utf-8") as f:
+                    text += f.read()
+
+            if ext == ".pdf":
+                reader = PdfReader(file)
+                text += "\n".join(page.extract_text() or "" for page in reader.pages)
+
+            if ext in [".doc", ".docx"]:
+                doc = Document("file.docx")
+                text += "\n".join(p.text for p in doc.paragraphs)
+
+            if ext == ".ipynb":
+                text += extract_ipynb_text(file.read_text(encoding="utf-8"))
+        return text
+    
+
+    def getMedia(self, path_to_dir:str):
+        text = ""
+        folder = Path(path_to_dir)
+        for file in folder.rglob("*"):
+            if not file.is_file():
+                continue
+
+            ext = file.suffix.lower()
+
+            if ext in [".jpeg", ".png", ".webp"]:
+                text += file.name + ":\n\n" + get_image_annotation(file, self.client)
+
+            if ext in [".mp4", ".avi", ".mov", ".mkv", ".wmv", ".webm"]:
+                text += file.name + ":\n\n" + get_video_annotation(file, self.client)
+        return text
+
+
+def extract_ipynb_text(text):
+    data = json.loads(text)
+    parts = []
+
+    for cell in data.get("cells", []):
+        src = cell.get("source", [])
+        if isinstance(src, list):
+            text = "".join(src)
+        else:
+            text = src
+        if text.strip():
+            parts.append(text)
+
+    return "\n\n".join(parts)
