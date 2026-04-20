@@ -1,5 +1,0 @@
-cache/
-.venv/
-__pycache__/
-**/*temp*
-test_v/

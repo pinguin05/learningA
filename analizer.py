@@ -25,18 +25,37 @@ class Analizer:
             
             if ext in [".md", ".txt"]:
                 with open(file, "r", encoding="utf-8") as f:
-                    text += f.read()
+                    text += file.name + ":\n\n" + f.read() + "\n\n"
 
             if ext == ".pdf":
                 reader = PdfReader(file)
-                text += "\n".join(page.extract_text() or "" for page in reader.pages)
+                text += file.name + ":\n\n" + "\n".join(page.extract_text() or "" for page in reader.pages) + "\n\n"
 
             if ext in [".doc", ".docx"]:
-                doc = Document("file.docx")
-                text += "\n".join(p.text for p in doc.paragraphs)
+                doc_text = ""
+                doc = Document(file)
+                # Извлекаем элементы документа в порядке их появления
+                for element in doc.element.body:
+                    if element.tag.endswith('p'):
+                        # Это параграф
+                        for paragraph in doc.paragraphs:
+                            if paragraph._element == element:
+                                doc_text += paragraph.text + "\n"
+                                break
+                    elif element.tag.endswith('tbl'):
+                        # Это таблица
+                        for table in doc.tables:
+                            if table._element == element:
+                                doc_text += "\n[Таблица]\n"
+                                for row in table.rows:
+                                    row_text = " | ".join(cell.text for cell in row.cells)
+                                    doc_text += row_text + "\n"
+                                doc_text += "\n"
+                                break
+                text += file.name + ":\n\n" + doc_text + "\n\n"
 
             if ext == ".ipynb":
-                text += extract_ipynb_text(file.read_text(encoding="utf-8"))
+                text += file.name + ":\n\n" + extract_ipynb_text(file.read_text(encoding="utf-8")) + "\n\n"
         return text
     
 

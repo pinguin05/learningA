@@ -17,6 +17,10 @@ client = OpenAI(
     base_url="http://localhost:1234/v1",
     api_key="not"    
 )
+
+class EmptyOnMissing(dict):
+    def __getitem__(self, key):
+        return ""
     
 
 def main(path_to_data:str):
@@ -26,9 +30,9 @@ def main(path_to_data:str):
         text = analizer.getText(os.path.join(path_to_data, folder))
         media_annotation = analizer.getMedia(os.path.join(path_to_data, folder))
 
-        annotation = get_annotation(text, client)
+        annotation = EmptyOnMissing()# get_annotation(text, client)
 
-        recs = get_recomendation(text, client)
+        recs = EmptyOnMissing()# get_recomendation(text, client)
 
         rows.append({
             "id": idx,
@@ -47,6 +51,7 @@ def main(path_to_data:str):
         })
     
     df = pd.DataFrame(rows)
+    df.to_csv("temp.csv")
     
     gen_df = generate_if_need(df)
     df = pd.concat([df, gen_df])
