@@ -3,6 +3,7 @@ import json
 from docx import Document
 from pypdf import PdfReader
 from pathlib import Path
+from pptx import Presentation
 
 from image import get_image_annotation
 from video import get_video_annotation
@@ -22,6 +23,7 @@ class Analizer:
                 continue
 
             ext = file.suffix.lower()
+            print("extracting text: ", ext)
             
             if ext in [".md", ".txt"]:
                 with open(file, "r", encoding="utf-8") as f:
@@ -56,6 +58,9 @@ class Analizer:
 
             if ext == ".ipynb":
                 text += file.name + ":\n\n" + extract_ipynb_text(file.read_text(encoding="utf-8")) + "\n\n"
+
+            if ext == ".pptx":
+                text += file.name + ":\n\n" + extract_text_from_pptx(file)
         return text
     
 
@@ -90,3 +95,27 @@ def extract_ipynb_text(text):
             parts.append(text)
 
     return "\n\n".join(parts)
+
+from pptx import Presentation
+
+
+def extract_text_from_pptx(file_path: str) -> str:
+    """
+    Извлекает весь текст из презентации PowerPoint.
+    
+    :param file_path: путь до .pptx файла
+    :return: строка со всем текстом из презентации
+    """
+    prs = Presentation(file_path)
+    result = []
+
+    for slide_num, slide in enumerate(prs.slides, start=1):
+        result.append(f"## Слайд {slide_num}")
+        for shape in slide.shapes:
+            if shape.has_text_frame:
+                for paragraph in shape.text_frame.paragraphs:
+                    text = paragraph.text.strip()
+                    if text:
+                        result.append(text)
+
+    return "\n".join(result)

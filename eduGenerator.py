@@ -13,14 +13,15 @@ MODEL="sage-mm-qwen3-vl-4b-sft"
 
 
 client = OpenAI(
-    base_url="http://localhost:1234/v1",
+    base_url="http://66.151.33.11:1234/v1",
     api_key="not"    
 )
 
 
 def main():
-    eng = create_engine(POSTGRES)
-    df = pd.read_sql("SELECT * FROM data", con=eng)
+    # eng = create_engine(POSTGRES)
+    # df = pd.read_sql("SELECT * FROM data", con=eng)
+    df = pd.read_csv("orig.csv")
     if len(df) < 3:
         print("в загруженном датасете слишком мало данных: ", len(df))
         return
@@ -28,6 +29,7 @@ def main():
     df = pd.concat([df, gen_df])
 
     orders = pd.DataFrame(get_order(df, client))
+    df = df.drop(["previous_id"], axis=1, errors='ignore')
     df = df.join(orders.set_index('id'), on='id')
 
     df.to_csv("gen.csv")

@@ -15,7 +15,7 @@ POSTGRES="postgresql://user:password@localhost:5432/database"
 
 
 client = OpenAI(
-    base_url="http://localhost:1234/v1",
+    base_url="http://66.151.33.11:1234/v1",
     api_key="not"
 )
     

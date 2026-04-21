@@ -10,7 +10,7 @@ from config import TEXT_MODEL
 def get_annotation(text:str, client:OpenAI):
     print("generating annotation...")
     messages = [
-        {"role": "user", "content": f"сформируй аналитическую запись на русском, содержащую предмет (дисциплину), тему, краткую аннотацию и уровень сложности для этого учебного материала:\n\n{text}"}
+        {"role": "user", "content": f"сформируй аналитическую запись на русском, содержащую предмет (дисциплину), тему, краткую аннотацию, формат учбеного материала и уровень сложности для этого учебного материала:\n\n{text}"}
     ]
 
     schema = {
@@ -40,7 +40,7 @@ def get_annotation(text:str, client:OpenAI):
                         "enum": ["easy", "medium", "hard"]
                     },
                     "type": {
-                        "description": "тип учебного материала",
+                        "description": "формат учбеного материала",
                         "type": "string"
                     }
                 },

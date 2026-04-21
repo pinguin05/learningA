@@ -15,7 +15,7 @@ def get_order(df:pd.DataFrame, client:OpenAI):
         mess += f"id: {item['id']}\nsubject: {item['subject']}\nannotation: {item['annotation']}\n\n"
 
     messages = [
-        {"role": "system", "content": "ты специалист по анализу учебных материалов. твоя задача для каждого учебного материала определить какой учебный материал необходимо прочитать перед этим (если такой есть)"},
+        {"role": "system", "content": "ты специалист по анализу учебных материалов. твоя задача для каждого учебного материала определить какой учебный материал необходимо прочитать перед этим и какой после этого (если такой есть)"},
         {"role": "user", "content": mess}
     ]
 
@@ -35,9 +35,13 @@ def get_order(df:pd.DataFrame, client:OpenAI):
                         "previous_id": {
                             "type": "integer",
                             "description": "id предыдущего учебного материала"
+                        },
+                        "next_id": {
+                            "type": "integer",
+                            "description": "id следующего учебного материала"
                         }
                     },
-                    "required": ["id", "previous_id"],
+                    "required": ["id", "previous_id", "next_id"],
                     "additionalProperties": False
                 }
             }
