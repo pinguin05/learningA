@@ -1,16 +1,15 @@
-import os
 import pandas as pd
+from sqlalchemy import create_engine
 from openai import OpenAI
-from annotation import get_annotation
-from image import get_image_annotation, is_image
-from video import get_video_annotation, is_video_cv2
-from recomendations import get_recomendation
-from order import get_order
 from gen_check import gen_if
+from annotation import get_annotation
+from recomendations import get_recomendation
 from storage import save_df_to_postgres
-from analizer import Analizer
+from order import get_order
 
-from config import POSTGRES
+
+POSTGRES="postgresql://user:password@localhost:5432/database"
+MODEL="sage-mm-qwen3-vl-4b-sft"
 
 
 client = OpenAI(
@@ -18,48 +17,20 @@ client = OpenAI(
     api_key="not"    
 )
 
-class EmptyOnMissing(dict):
-    def __getitem__(self, key):
-        return ""
-    
 
-def main(path_to_data:str):
-    analizer = Analizer(client, "sage-mm-qwen3-vl-4b-sft")
-    rows = []
-    for idx, folder in enumerate(os.listdir(path_to_data)):
-        text = analizer.getText(os.path.join(path_to_data, folder))
-        media_annotation = analizer.getMedia(os.path.join(path_to_data, folder))
-
-        annotation = EmptyOnMissing()# get_annotation(text, client)
-
-        recs = EmptyOnMissing()# get_recomendation(text, client)
-
-        rows.append({
-            "id": idx,
-            "text": text,
-            "annotation": annotation["annotation"],
-            "subject": annotation["subject"],
-            "topic": annotation["topic"],
-            "media_annotation": media_annotation,
-            "rec_struct": recs["struct"],
-            "rec_validity": recs["validity"],
-            "rec_availability": recs["availability"],
-            "rec_sum": recs["summary"],
-            "generated": False,
-            "type": annotation["type"],
-            "difficulty_level": annotation["difficulty_level"]
-        })
-    
-    df = pd.DataFrame(rows)
-    df.to_csv("temp.csv")
-    
+def main():
+    eng = create_engine(POSTGRES)
+    df = pd.read_sql("SELECT * FROM data", con=eng)
+    if len(df) < 3:
+        print("в загруженном датасете слишком мало данных: ", len(df))
+        return
     gen_df = generate_if_need(df)
     df = pd.concat([df, gen_df])
 
     orders = pd.DataFrame(get_order(df, client))
     df = df.join(orders.set_index('id'), on='id')
 
-    df.to_csv("temp.csv")
+    df.to_csv("gen.csv")
     save_df_to_postgres(df, "data", POSTGRES)
 
     df['text_len'] = df['text'].str.len()
@@ -99,4 +70,4 @@ def generate_if_need(df:pd.DataFrame):
 
 
 if __name__=="__main__":
-    main("data")
+    main()
